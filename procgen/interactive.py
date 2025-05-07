@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 import argparse
-
+import cv2
+import numpy as np
+from typing import Optional
 from procgen import ProcgenGym3Env
-from .env import ENV_NAMES
+try:
+    from .env import ENV_NAMES
+except ImportError:
+    from procgen.env import ENV_NAMES
 from gym3 import Interactive, VideoRecorderWrapper, unwrap
 
 
@@ -10,6 +15,8 @@ class ProcgenInteractive(Interactive):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._saved_state = None
+        self.env = args[0]
+        self.count_actions = 0
 
     def _update(self, dt, keys_clicked, keys_pressed):
         if "LEFT_SHIFT" in keys_pressed and "F1" in keys_clicked:
@@ -19,7 +26,76 @@ class ProcgenInteractive(Interactive):
             print("load state")
             if self._saved_state is not None:
                 unwrap(self._env).set_state(self._saved_state)
+        # Save the current observation and action
+        keys = keys_clicked if self._synchronous else keys_pressed
+        act = self._keys_to_act(keys)[0]
+        if self.count_actions == 0: # 4 is do nothing
+            t1, obs1, batch_first = self.env.observe()
+            img = obs1["rgb"]
+            img = img.squeeze()
+            cv2.imwrite("/home/shellyf/Projects/data/procgen/{}_{}_{}.png".format(self.count_actions, self._episode_return, (self._episode_return == 10.0)), img)
+            self.count_actions+=1
+        # if act is not None:
+        #     self._saved_data.append({"observation": self.img, "action": act})
+        if act == 4: # 4 is do nothing
+            return
+        # Call the original update method
         super()._update(dt, keys_clicked, keys_pressed)
+        if act != 4: # 4 is do nothing
+            t1, obs1, batch_first = self.env.observe()
+            img = obs1["rgb"]
+            img = img.squeeze()
+            cv2.imwrite("/home/shellyf/Projects/data/procgen/{}_{}_{}.png".format(self.count_actions, self._episode_return, (self._episode_return == 10.0)), img)
+            self.count_actions+=1
+
+        if self._last_info["episode_return"] == 10.0:
+            print("episode return is 10.0")
+            t1, obs1, batch_first = self.env.observe()
+            img = obs1["rgb"]
+            img = img.squeeze()
+            cv2.imwrite(
+                "/home/shellyf/Projects/data/procgen/{}_{}_{}.png".format(self.count_actions, self._episode_return, True), img)
+            self._renderer.is_open = False
+
+    def _get_image(self) -> Optional[np.ndarray]:
+        """
+        Get the image that we should display to the user for the current step,
+        with a mask applied.
+        """
+        _, ob, _ = self._env.observe()
+        if self._info_key is None:
+            if self._ob_key is not None:
+                ob = ob[self._ob_key]
+            image = ob[0]
+        else:
+            info = self._env.get_info()
+            image = info[0].get(self._info_key)
+
+        if image is not None:
+            # Extract agent position from the info dictionary
+            info = self._env.get_info()[0]
+            # Find the first pixel with the color (187, 203, 204)
+            target_color = np.array([187, 203, 204])
+            match = np.all(image == target_color, axis=-1)
+            coords = np.argwhere(match)
+            agent_pos = coords[0]
+
+            if agent_pos is not None:
+                # Map agent position to pixel coordinates
+                h, w, _ = image.shape
+                center_x = int(agent_pos[1])
+                center_y = int(agent_pos[0])
+
+                # Create a circular mask around the agent
+                mask = np.zeros((h, w), dtype=np.uint8)
+                radius = min(h, w) // 8  # Adjust radius as needed
+                cv2.circle(mask, (center_x, center_y), radius, 255, -1)
+
+                # Apply the mask to the image
+                masked_image = cv2.bitwise_and(image, image, mask=mask)
+                return masked_image
+
+        return image
 
 
 def make_interactive(vision, record_dir, **kwargs):
