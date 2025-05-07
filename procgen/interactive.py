@@ -4,6 +4,11 @@ import cv2
 import numpy as np
 from typing import Optional
 from procgen import ProcgenGym3Env
+import copy
+from datetime import datetime
+import os
+import random
+
 try:
     from .env import ENV_NAMES
 except ImportError:
@@ -11,12 +16,16 @@ except ImportError:
 from gym3 import Interactive, VideoRecorderWrapper, unwrap
 
 
+RECORD_DIR = None
+
 class ProcgenInteractive(Interactive):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, seed, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._saved_state = None
         self.env = args[0]
+        self.seed = seed
         self.count_actions = 0
+        self.data_dict = {"observations": [], "actions": [], "rewards": [], "dones": []}
 
     def _update(self, dt, keys_clicked, keys_pressed):
         if "LEFT_SHIFT" in keys_pressed and "F1" in keys_clicked:
@@ -28,34 +37,49 @@ class ProcgenInteractive(Interactive):
                 unwrap(self._env).set_state(self._saved_state)
         # Save the current observation and action
         keys = keys_clicked if self._synchronous else keys_pressed
-        act = self._keys_to_act(keys)[0]
-        if self.count_actions == 0: # 4 is do nothing
+        act = self._keys_to_act(keys)
+        if self.count_actions == 0:
             t1, obs1, batch_first = self.env.observe()
-            img = obs1["rgb"]
+            img = copy.deepcopy(obs1["rgb"])
             img = img.squeeze()
-            cv2.imwrite("/home/shellyf/Projects/data/procgen/{}_{}_{}.png".format(self.count_actions, self._episode_return, (self._episode_return == 10.0)), img)
+            img = np.transpose(img, (2, 0, 1))
+            # cv2.imwrite(str(RECORD_DIR) + "/{}_{}_{}_{}.png".format(self.seed, self.count_actions, self._episode_return, (self._episode_return == 10.0)), img)
+            self.data_dict["observations"].append(img)
             self.count_actions+=1
-        # if act is not None:
-        #     self._saved_data.append({"observation": self.img, "action": act})
-        if act == 4: # 4 is do nothing
+        if act[0] == 4: # 4 is do nothing
             return
         # Call the original update method
         super()._update(dt, keys_clicked, keys_pressed)
-        if act != 4: # 4 is do nothing
-            t1, obs1, batch_first = self.env.observe()
-            img = obs1["rgb"]
-            img = img.squeeze()
-            cv2.imwrite("/home/shellyf/Projects/data/procgen/{}_{}_{}.png".format(self.count_actions, self._episode_return, (self._episode_return == 10.0)), img)
-            self.count_actions+=1
-
-        if self._last_info["episode_return"] == 10.0:
+        if self._last_info["episode_return"] == 10.0 or self.count_actions > 499:
             print("episode return is 10.0")
             t1, obs1, batch_first = self.env.observe()
             img = obs1["rgb"]
             img = img.squeeze()
-            cv2.imwrite(
-                "/home/shellyf/Projects/data/procgen/{}_{}_{}.png".format(self.count_actions, self._episode_return, True), img)
-            self._renderer.is_open = False
+            # cv2.imwrite(
+            #     str(RECORD_DIR) +"/{}_{}_{}_{}.png".format(self.seed, self.count_actions, self._episode_return, True), img)
+            self.data_dict["observations"].append(np.transpose(img, (2, 0, 1)))
+            self.data_dict["actions"].append(act)
+            self.data_dict["rewards"].append(self._last_info["episode_return"])
+            self.data_dict["dones"].append(1)
+            self._renderer._should_close = True
+            self._renderer.finish()
+            # Save data_dict to a .npy file
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            episode_ret = self._last_info["episode_return"]
+            filename = os.path.join(RECORD_DIR, f"{timestamp}_{self.count_actions}_{self.seed}_{int(episode_ret)}.npy")
+            np.save(filename, self.data_dict)
+            print("saved data_dict to {}".format(filename))
+
+        elif act[0] != 4: # 4 is do nothing
+            t1, obs1, batch_first = self.env.observe()
+            img = obs1["rgb"]
+            img = img.squeeze()
+            # cv2.imwrite(str(RECORD_DIR) + "/{}_{}_{}_{}.png".format(self.seed, self.count_actions, self._episode_return, (self._episode_return == 10.0)), img)
+            self.data_dict["observations"].append(np.transpose(img, (2, 0, 1)))
+            self.data_dict["actions"].append(act)
+            self.data_dict["rewards"].append(self._episode_return)
+            self.data_dict["dones"].append(1 if self._episode_return == 10 else 0)
+            self.count_actions+=1
 
     def _get_image(self) -> Optional[np.ndarray]:
         """
@@ -98,7 +122,8 @@ class ProcgenInteractive(Interactive):
         return image
 
 
-def make_interactive(vision, record_dir, **kwargs):
+def make_interactive(seed, vision, record_dir, **kwargs):
+    global RECORD_DIR
     info_key = None
     ob_key = None
     if vision == "human":
@@ -109,16 +134,18 @@ def make_interactive(vision, record_dir, **kwargs):
 
     env = ProcgenGym3Env(num=1, **kwargs)
     if record_dir is not None:
-        env = VideoRecorderWrapper(
-            env=env, directory=record_dir, ob_key=ob_key, info_key=info_key
-        )
+        RECORD_DIR = record_dir
+    #     env = VideoRecorderWrapper(
+    #         env=env, directory=record_dir, ob_key=ob_key, info_key=info_key
+    #     )
     h, w, _ = env.ob_space["rgb"].shape
     return ProcgenInteractive(
-        env,
+        seed, env,
         ob_key=ob_key,
         info_key=info_key,
         width=w * 12,
         height=h * 12,
+        synchronous=True
     )
 
 
@@ -133,7 +160,7 @@ def main():
         choices=["agent", "human"],
         help="level of fidelity of observation " + default_str,
     )
-    parser.add_argument("--record-dir", help="directory to record movies to")
+    parser.add_argument("--record-dir", help="directory to record moinfo_keys to")
     parser.add_argument(
         "--distribution-mode",
         default="hard",
@@ -202,10 +229,25 @@ def main():
     if args.level_seed is not None:
         kwargs["start_level"] = args.level_seed
         kwargs["num_levels"] = 1
-    ia = make_interactive(
-        args.vision, record_dir=args.record_dir, env_name=args.env_name, **kwargs
-    )
-    ia.run()
+
+    # create a list of all the levels ( seeds) 1-19
+    levels = list(range(16, 19))
+    random.shuffle(levels)
+    for level in levels:
+        kwargs["start_level"] = level
+        kwargs["num_levels"] = 1
+        # create a directory for each level
+        # record_dir = os.path.join(args.record_dir, str(level))
+        if not os.path.exists(args.record_dir):
+            os.makedirs(args.record_dir)
+        # create the interactive environment
+        ia = make_interactive(args.level_seed,
+            args.vision, record_dir=args.record_dir, env_name=args.env_name, **kwargs
+        )
+        try:
+            ia.run()
+        except Exception as e:
+            continue
 
 
 if __name__ == "__main__":
