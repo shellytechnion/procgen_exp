@@ -1,4 +1,4 @@
-name: procgen
+name: procgen_IL
 channels:
   - conda-forge
 
@@ -9,6 +9,15 @@ dependencies:
   - cmake=3.21.3
   - qt=5.12.5  # conda-forge does not have 5.13.2 available
   - pip
+  - gcc_linux-64       # This adds the Linux compiler
+  - gxx_linux-64       # This adds the C++ compiler
+  - libxcrypt
+  - xorg-libx11
+  - xorg-libxext
+  - xorg-libxrandr
+  - xorg-libxrender
+  - xorg-libxtst
+  - xorg-xproto            # Added this to include X.h
   - pip:
     - gym3==0.3.3
     - numpy==1.17.2

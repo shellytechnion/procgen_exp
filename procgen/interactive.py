@@ -231,15 +231,15 @@ def main():
         kwargs["num_levels"] = 1
 
     # create a list of all the levels ( seeds) 1-19
-    levels = list(range(16, 19))
+    levels = list(range(1, 100))
     random.shuffle(levels)
     for level in levels:
         kwargs["start_level"] = level
         kwargs["num_levels"] = 1
         # create a directory for each level
         # record_dir = os.path.join(args.record_dir, str(level))
-        if not os.path.exists(args.record_dir):
-            os.makedirs(args.record_dir)
+        # if not os.path.exists(args.record_dir):
+        #     os.makedirs(args.record_dir)
         # create the interactive environment
         ia = make_interactive(args.level_seed,
             args.vision, record_dir=args.record_dir, env_name=args.env_name, **kwargs
