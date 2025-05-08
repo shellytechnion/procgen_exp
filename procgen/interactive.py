@@ -8,6 +8,7 @@ import copy
 from datetime import datetime
 import os
 import random
+from tqdm import tqdm
 
 try:
     from .env import ENV_NAMES
@@ -230,10 +231,10 @@ def main():
         kwargs["start_level"] = args.level_seed
         kwargs["num_levels"] = 1
 
-    # create a list of all the levels ( seeds) 1-19
+    # create a list of all the levels (seeds)
     levels = list(range(1, 100))
     random.shuffle(levels)
-    for level in levels:
+    for level in tqdm(levels):
         kwargs["start_level"] = level
         kwargs["num_levels"] = 1
         # create a directory for each level
@@ -241,7 +242,7 @@ def main():
         # if not os.path.exists(args.record_dir):
         #     os.makedirs(args.record_dir)
         # create the interactive environment
-        ia = make_interactive(args.level_seed,
+        ia = make_interactive(level,
             args.vision, record_dir=args.record_dir, env_name=args.env_name, **kwargs
         )
         try:

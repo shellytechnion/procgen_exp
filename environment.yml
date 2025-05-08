@@ -24,3 +24,4 @@ dependencies:
     - gym==0.15.3
     - filelock==3.0.10
     - opencv-python
+    - tqdm
