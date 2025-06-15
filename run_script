@@ -1,0 +1,32 @@
+#!/bin/bash
+
+echo "Cloning procgen_exp repository..."
+#git clone git@github.com:shellytechnion/procgen_exp.git
+#cd procgen_exp
+
+echo "Creating conda environment..."
+#conda env create -f environment.yml
+#conda activate procgen_IL
+
+# Prompt the user for the save directory
+echo -n "Enter the directory path to save recordings: "
+read SAVE_DIR
+
+# Create the directory
+SAVE_DIR_maze="${SAVE_DIR}/maze"
+SAVE_DIR_heist="${SAVE_DIR}/heist"
+SAVE_DIR_jumper="${SAVE_DIR}/jumper"
+
+# Create the directories
+mkdir -p "$SAVE_DIR_maze"
+mkdir -p "$SAVE_DIR_heist"
+mkdir -p "$SAVE_DIR_jumper"
+echo "Starting procgen maze with recordings saved to: $SAVE_DIR"
+python3 -m procgen.interactive --env-name maze --distribution-mode easy --record-dir $SAVE_DIR_maze
+
+
+echo "Starting procgen heist with recordings saved to: $SAVE_DIR"
+python3 -m procgen.interactive --env-name heist --distribution-mode easy --record-dir $SAVE_DIR_heist
+
+echo "Starting procgen jumper with recordings saved to: $SAVE_DIR"
+python3 -m procgen.interactive --env-name jumper --distribution-mode easy --record-dir $SAVE_DIR_jumper
