@@ -1,12 +1,11 @@
 #!/bin/bash
 
-#echo "Cloning procgen_exp repository..."
-#git clone git@github.com:shellytechnion/procgen_exp.git
-#cd procgen_exp
-
 echo "Creating conda environment..."
-conda env create -f environment.yml
+conda create -n procgen_IL  python=3.7.3
 conda activate procgen_IL
+conda install -c conda-forge moderngl glcontext
+pip install procgen-0.10.7+c53c918-cp37-cp37m-linux_x86_64.whl
+pip install opencv-python, tqdm
 
 # Prompt the user for the save directory
 echo -n "Enter your name: "
@@ -25,21 +24,15 @@ SAVE_DIR_jumper="${SAVE_DIR}/jumper"
 mkdir -p "$SAVE_DIR_maze"
 mkdir -p "$SAVE_DIR_heist"
 mkdir -p "$SAVE_DIR_jumper"
-echo "Starting procgen maze with recordings saved to: $SAVE_DIR"
+echo "Starting procgen maze with recordings saved to: $SAVE_DIR_maze"
 python3 -m procgen.interactive --env-name maze --distribution-mode easy --record-dir $SAVE_DIR_maze --name "$NAME"
 
-
-echo "Starting procgen heist with recordings saved to: $SAVE_DIR"
+echo "Starting procgen heist with recordings saved to: $SAVE_DIR_heist"
 python3 -m procgen.interactive --env-name heist --distribution-mode easy --record-dir $SAVE_DIR_heist --name "$NAME"
 
-echo "Starting procgen jumper with recordings saved to: $SAVE_DIR"
+echo "Starting procgen jumper with recordings saved to: $SAVE_DIR_jumper"
 python3 -m procgen.interactive --env-name jumper --distribution-mode easy --record-dir $SAVE_DIR_jumper --name "$NAME"
 
 
 
 
-conda create -n test_procgen  python=3.7.3
-conda activate test_procgen
-conda install -c conda-forge moderngl glcontext
-pip install procgen-0.10.7+c53c918-cp37-cp37m-linux_x86_64.whl
-pip install opencv-python, tqdm
