@@ -1,11 +1,11 @@
 #!/bin/bash
 
-echo "Creating conda environment..."
+echo "Creating conda environment 'procgen_IL' ..."
 conda create -n procgen_IL  python=3.7.3
 conda activate procgen_IL
 conda install -c conda-forge moderngl glcontext
 pip install procgen-0.10.7+c53c918-cp37-cp37m-linux_x86_64.whl
-pip install opencv-python, tqdm
+pip install opencv-python tqdm
 
 # Prompt the user for the save directory
 echo -n "Enter your name: "
@@ -18,21 +18,36 @@ read SAVE_DIR
 # Create the directory
 SAVE_DIR_maze="${SAVE_DIR}/maze"
 SAVE_DIR_heist="${SAVE_DIR}/heist"
-SAVE_DIR_jumper="${SAVE_DIR}/jumper"
+#SAVE_DIR_jumper="${SAVE_DIR}/jumper"
+SAVE_DIR_maze_blindfolded="${SAVE_DIR}/maze_blindfolded"
+SAVE_DIR_heist_blindfolded="${SAVE_DIR}/heist_blindfolded"
+#SAVE_DIR_jumper_blindfolded="${SAVE_DIR}/jumper_blindfolded"
 
 # Create the directories
 mkdir -p "$SAVE_DIR_maze"
 mkdir -p "$SAVE_DIR_heist"
-mkdir -p "$SAVE_DIR_jumper"
+#mkdir -p "$SAVE_DIR_jumper"
+mkdir -p "$SAVE_DIR_maze_blindfolded"
+mkdir -p "$SAVE_DIR_heist_blindfolded"
+#mkdir -p "$SAVE_DIR_jumper_blindfolded"
+
+echo "Starting procgen maze blindfolded with recordings saved to: $SAVE_DIR_maze_blindfolded"
+python3 -m procgen.interactive --env-name maze --distribution-mode easy --record-dir $SAVE_DIR_maze_blindfolded --name "$NAME" --blindfolded
+
 echo "Starting procgen maze with recordings saved to: $SAVE_DIR_maze"
 python3 -m procgen.interactive --env-name maze --distribution-mode easy --record-dir $SAVE_DIR_maze --name "$NAME"
+
+##############################
+echo "Starting procgen heist blindfolded with recordings saved to: $SAVE_DIR_heist_blindfolded"
+python3 -m procgen.interactive --env-name heist --distribution-mode easy --record-dir $SAVE_DIR_heist_blindfolded --name "$NAME" --blindfolded
 
 echo "Starting procgen heist with recordings saved to: $SAVE_DIR_heist"
 python3 -m procgen.interactive --env-name heist --distribution-mode easy --record-dir $SAVE_DIR_heist --name "$NAME"
 
-echo "Starting procgen jumper with recordings saved to: $SAVE_DIR_jumper"
-python3 -m procgen.interactive --env-name jumper --distribution-mode easy --record-dir $SAVE_DIR_jumper --name "$NAME"
 
+# echo "Starting procgen jumper with recordings saved to: $SAVE_DIR_jumper"
+# python3 -m procgen.interactive --env-name jumper --distribution-mode easy --record-dir $SAVE_DIR_jumper --name "$NAME" --blindfolded
+#
 
 
 
