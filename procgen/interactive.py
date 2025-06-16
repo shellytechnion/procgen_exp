@@ -19,6 +19,7 @@ from gym3 import Interactive, VideoRecorderWrapper, unwrap
 
 RECORD_DIR = None
 ENV = "maze"  # default environment, can be overridden by command line argument
+NAME = "None"
 
 class ProcgenInteractive(Interactive):
     def __init__(self, seed, *args, **kwargs):
@@ -69,7 +70,7 @@ class ProcgenInteractive(Interactive):
             # Save data_dict to a .npy file
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             episode_ret = self._last_info["episode_return"]
-            filename = os.path.join(RECORD_DIR, f"{timestamp}_{self.count_actions}_{self.seed}_{int(episode_ret)}.npy")
+            filename = os.path.join(RECORD_DIR, f"{NAME}_{timestamp}_{self.count_actions}_{self.seed}_{int(episode_ret)}.npy")
             np.save(filename, self.data_dict)
             print("saved data_dict to {}".format(filename))
 
@@ -138,7 +139,7 @@ class ProcgenInteractive(Interactive):
 
 
 def make_interactive(seed, vision, record_dir, **kwargs):
-    global RECORD_DIR
+    global RECORD_DIR, NAME
     info_key = None
     ob_key = None
     if vision == "human":
@@ -165,7 +166,7 @@ def make_interactive(seed, vision, record_dir, **kwargs):
 
 
 def main():
-    global ENV
+    global ENV, NAME
     default_str = "(default: %(default)s)"
     parser = argparse.ArgumentParser(
         description="Interactive version of Procgen allowing you to play the games"
@@ -191,7 +192,11 @@ def main():
     parser.add_argument(
         "--level-seed", type=int, help="select an individual level to use"
     )
-
+    parser.add_argument(
+        "--name",
+        default="None",
+        help="Your name",
+    )
     advanced_group = parser.add_argument_group("advanced optional switch arguments")
     advanced_group.add_argument(
         "--paint-vel-info",
@@ -245,6 +250,8 @@ def main():
     if args.level_seed is not None:
         kwargs["start_level"] = args.level_seed
         kwargs["num_levels"] = 1
+    if args.name is not "None":
+        NAME = args.name
 
     # create a list of all the levels (seeds)
     # levels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 29, 31, 32, 34, 35, 36, 37, 38, 40, 44, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 58, 60, 61, 62, 63, 64, 65, 66, 69, 70, 71, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 86, 88, 89, 90, 91, 92, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 107, 108, 109, 110, 111, 112, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123]
