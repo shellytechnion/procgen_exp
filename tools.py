@@ -13,7 +13,8 @@ num of seeds =  1500
     # folder_path = '/home/shellyf/Projects/data/data_ppo/maze_100_seed_50_traj'  # Update with your actual folder path
     # folder_path = '/home/shellyf/Projects/data/data_ppo/maze_full'  # Update with your actual folder path
     # folder_path = '/home/shellyf/Projects/data/data_ppo/heist_full'  # Update with your actual folder path
-    folder_path = '/home/shellyf/Projects/data/data_ppo/jumper_full'  # Update with your actual folder path
+    # folder_path = '/home/shellyf/Projects/data/data_ppo/jumper_full'  # Update with your actual folder path
+    folder_path = '/home/shellyf/Projects/data/Eitan_Smolar_data/heist_blindfolded'
     destination_folder = '/home/shellyf/Projects/data/data_ppo/maze_100_seed_50_traj'  # Update with your actual destination folder path
     level_seeds = []
     count = 0
@@ -88,7 +89,7 @@ num of seeds =  1500
     print(seed_games)
     # print("level seeds = ", level_seeds)
     print("num of seeds = ", count)
-    print(sum(seed_games.values()))
+    # print(sum(seed_games.values()))
     print("total episode length = ", total_eposode_length)
     print("needed_seeds = ", needed_seeds)
     print("needed_seeds_count = ", needed_seeds_count)
@@ -217,8 +218,36 @@ def calculate_std_var():
         print("Variance:", variance)
     else:
         print("No episode lengths were found.")
+
+def rename_files():
+    import os
+    folder_paths = ["/home/shellyf/Projects/data/data_ppo/maze",
+                    "/home/shellyf/Projects/data/data_ppo/heist",
+                    "/home/shellyf/Projects/data/data_blindfolded_expert/maze",
+                    "/home/shellyf/Projects/data/data_blindfolded_expert/heist",]
+
+    for folder in folder_paths:
+        for filename in os.listdir(folder):
+            full_path = os.path.join(folder, filename)
+            if os.path.isfile(full_path):
+                base, ext = os.path.splitext(filename)
+                parts = base.split("_")
+                # Ensure there are at least two parts and both parts contain only letters
+                if len(parts) >= 2 and ("Doron" in parts[0]  or " " in parts[0]):
+                    if parts[0] == "Doron-Shpigel":
+                        # If the first part is "Doron", keep it as is
+                        new_base = "DoronS_" + "_".join(parts[1:])
+                    elif " " in parts[0]:
+                        new_base = parts[0].replace(" ", "")+ "_" + "_".join(parts[1:])
+                    else:
+                        continue
+                    new_filename = new_base + ext
+                    new_path = os.path.join(folder, new_filename)
+                    os.rename(full_path, new_path)
+                    print(f"Renamed {filename} -> {new_filename}")
+
 if __name__ == "__main__":
-    count_seeds()
+    # count_seeds()
     # remove_index()
     # add_index()
     # transfer_to_with_backgrounds()
